@@ -44,7 +44,7 @@ Docker installed... duh
 
 
 ## Running Locally
-The docker compose file will run a the unit tests automatically.
+The docker compose file will run the unit tests automatically.
 
 ```bash
 docker compose build; docker compose up

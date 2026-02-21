@@ -119,4 +119,9 @@ def test_probe_subnet_logic(mock_subprocess):
         "subnet": "168.100.1.0/16"
     })
     assert response.status_code == 400
+
+    response = client.get("/probe/subnet", params={
+        "subnet": "192.168.1.0/50"
+    })
+    assert response.status_code == 400
     

@@ -20,4 +20,4 @@ services:
       - PYTHONPATH=/code
     volumes: 
       - .:/code 
-    command: pytest -vv
+    command: pytest -vv --cov=app --cov-report=html
