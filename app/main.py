@@ -1,16 +1,47 @@
 from fastapi import FastAPI, Query
+from fastapi import __version__ as fastapi_version
+import uvicorn
 import requests
 import time
+import platform
+import socket
+import psutil
+import datetime
 
 app = FastAPI()
+start_time = datetime.datetime.now(datetime.UTC)
 
-@app.get("/")
+@app.get("/",
+    summary="Welcome to the Homelab Probe API. This is a playground for messing with Fast API"
+    " and trying different methodologies. This endpoint provides interesting system and server information.")
 def index():
-    return{"Hello": "Whoever is reading this"}
+    return{
+        "app": {
+            "name": "HomeLab Probe API",
+            "version": "1.0.0",
+        },
+        "server": {
+            "python_version": platform.python_version(),
+            "fastapi_version": fastapi_version,
+            "uvicorn_version": uvicorn.__version__,
+            "hostname": socket.gethostname(),
+            "uptime_seconds": (datetime.datetime.now(datetime.UTC) - start_time).seconds,
+            "current_time_utc": datetime.datetime.now(datetime.UTC).isoformat(),
+            "epoch_time": int(time.time())
+        , 
+        "system": { 
+            "cpu_count": psutil.cpu_count(),
+            "cpu_load": psutil.getloadavg(),
+            "memory": psutil.virtual_memory()._asdict(),
+            "disk_usage": psutil.disk_usage("/")._asdict(), 
+            }
+        }
+    }
 
 @app.get("/probe/url",
     summary="This endpoint probes the provided web app given with GET requests.",
-    response_description="A dictionary of requests detailing request information and results. The key is the request counter and the value is the response information."
+    response_description="A dictionary of requests detailing request information and results. The key is the" \
+    " request counter and the value is the response information."
 )
 def probe_url(
     count: int = Query(..., description="Number of Requests to Send."),
