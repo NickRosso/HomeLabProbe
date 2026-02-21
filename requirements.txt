@@ -1,2 +1,4 @@
-fastapi[standard]==0.112.0
+fastapi[standard]==0.129.0
 requests
+httpx
+pytest

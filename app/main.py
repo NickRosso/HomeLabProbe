@@ -6,7 +6,7 @@ app = FastAPI()
 
 @app.get("/")
 def index():
-    return{"Hello": "World"}
+    return{"Hello": "Whoever is reading this"}
 
 @app.get("/probe/url",
     summary="This endpoint probes the provided web app given with GET requests.",

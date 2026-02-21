@@ -2,8 +2,22 @@ services:
   homelab-api:
     build: .
     container_name: homelab-api
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
     ports:
       - "8080:8000"
     volumes:
       - .:/code
     restart: unless-stopped
+
+  homelab-tests: 
+    build: . 
+    container_name: homelab-tests
+    environment: 
+      - PYTHONPATH=/code
+    volumes: 
+      - .:/code 
+    command: pytest -vv
