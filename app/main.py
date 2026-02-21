@@ -7,7 +7,7 @@ import platform
 import socket
 import psutil
 import datetime
-import ipaddress
+from .utils import validate_and_probe_subnet
 
 app = FastAPI()
 start_time = datetime.datetime.now(datetime.UTC)
@@ -80,8 +80,5 @@ def probe_url(
 def probe_subnet(
     subnet: str = Query(..., description="Subnet such as 192.168.1.0/28. Must be a Class C Subnet.")
 ):
-    try: 
-        network = ipaddress.ip_network(subnet, strict=True) 
-    except ValueError: 
-        raise HTTPException(status_code=400, detail="Invalid subnet format. Use CIDR notation like 192.168.1.0/28.")
-    print(network)
+    response = validate_and_probe_subnet(subnet)
+    return response

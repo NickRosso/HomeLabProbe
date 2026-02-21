@@ -1,4 +1,6 @@
 FROM python:3.14
+#installing ping os command within iputils
+RUN apt-get update && apt-get install -y --no-install-recommends iputils-ping
 
 WORKDIR /code
 COPY ./requirements.txt /code/requirements.txt

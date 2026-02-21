@@ -102,3 +102,21 @@ def test_probe_url_missing_protocol_error():
         "ssl": True
     })
     assert response.json() == {'detail': "Error please provide the full URL of the web app to test. i.e. https://localhost"}
+
+#Patching subprocess otherwise test case will actually ping these! Which is cool but takes some time :)
+@patch("app.utils.subprocess")
+def test_probe_subnet_logic(mock_subprocess):
+    #testing Valid subnet
+    response = client.get("/probe/subnet", params={
+        "subnet": "192.168.1.0/24"
+    })
+    data = response.json()
+    assert "subnet" in data
+    assert "total_hosts" in data
+    assert "alive_hosts" in data
+    #testing Invalid class C 
+    response = client.get("/probe/subnet", params={
+        "subnet": "168.100.1.0/16"
+    })
+    assert response.status_code == 400
+    
