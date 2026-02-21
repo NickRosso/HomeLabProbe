@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 import requests
+import time
 
 app = FastAPI()
 
@@ -7,24 +8,18 @@ app = FastAPI()
 def index():
     return{"Hello": "World"}
 
-@app.get("/probe/url")
+@app.get("/probe/url",
+    summary="This endpoint probes the provided web app given with GET requests.",
+    response_description="A dictionary of requests detailing request information and results. The key is the request counter and the value is the response information."
+)
 def probe_url(
-    count: int,
-    url: str,
-    ssl: bool = False
+    count: int = Query(..., description="Number of Requests to Send."),
+    url: str = Query(..., description="Full URL including http:// or https://"),
+    ssl: bool = Query(False, description="Verify SSL Certificate"),
+    delay: int = Query(15, description="Time in seconds between requests"),
+    back_off: int = Query(5, description="Increases time between requests each time there is a error")
 ):
-    """
-    This endpoint probes the provided web app given with GET requests."
-    Args:
-        :param count: number of requests to made
-        :type count: int
-        :param url: https or http url of the URL
-        :type url: str
-        :param ssl: Selects to make requests with insecure flag. True uses SSL, False does not.
-        :type ssl: bool
-    Returns:
-        A list dictionary of requests detailing request information and results.
-    """
+
     if not url.startswith(("http://", "https://")):
         return {"Error": "Please provide the full URL of the web app to test. i.e. https://localhost"}
     
@@ -38,6 +33,10 @@ def probe_url(
             "status": response.status_code, 
             "content_length": len(response.content)
         }
+        if not response.ok:
+            delay *= back_off # Increase delay by back_off
+            
+        time.sleep(delay)
 
     return responses
     
