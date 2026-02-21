@@ -52,5 +52,9 @@ def test_index():
     assert isinstance(system["memory"], dict)
     assert isinstance(system["disk_usage"], dict)
 
-
-
+def test_web_probe_required_query_parameters():
+    response = client.get("/probe/url")
+    data = response.json()
+    assert response.status_code == 422
+    assert isinstance(data["detail"], list) # if request does not contain required parameters 
+    assert len(data["detail"])== 2 #currently there are two required query parameters
