@@ -28,7 +28,7 @@ def index():
             "uptime_seconds": (datetime.datetime.now(datetime.UTC) - start_time).seconds,
             "current_time_utc": datetime.datetime.now(datetime.UTC).isoformat(),
             "epoch_time": int(time.time())
-        , 
+        }, 
         "system": { 
             "cpu_count": psutil.cpu_count(),
             "cpu_load": psutil.getloadavg(),
@@ -36,7 +36,6 @@ def index():
             "disk_usage": psutil.disk_usage("/")._asdict(), 
             }
         }
-    }
 
 @app.get("/probe/url",
     summary="This endpoint probes the provided web app given with GET requests.",
