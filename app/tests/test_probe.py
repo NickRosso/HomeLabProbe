@@ -101,4 +101,4 @@ def test_probe_url_missing_protocol_error():
         "back_off": 3,
         "ssl": True
     })
-    assert response.json() == {"Error": "Please provide the full URL of the web app to test. i.e. https://localhost"}
+    assert response.json() == {'detail': "Error please provide the full URL of the web app to test. i.e. https://localhost"}

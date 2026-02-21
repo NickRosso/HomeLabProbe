@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi import __version__ as fastapi_version
 import uvicorn
 import requests
@@ -7,13 +7,15 @@ import platform
 import socket
 import psutil
 import datetime
+import ipaddress
 
 app = FastAPI()
 start_time = datetime.datetime.now(datetime.UTC)
 
 @app.get("/",
     summary="Welcome to the Homelab Probe API. This is a playground for messing with Fast API"
-    " and trying different methodologies. This endpoint provides interesting system and server information.")
+    " and trying different methodologies. This endpoint provides interesting system and server information."
+)
 def index():
     return{
         "app": {
@@ -51,7 +53,8 @@ def probe_url(
 ):
 
     if not url.startswith(("http://", "https://")):
-        return {"Error": "Please provide the full URL of the web app to test. i.e. https://localhost"}
+        raise HTTPException(status_code=400, detail="Error please provide the full URL of the web app to test. i.e. https://localhost")
+
     
     responses = {}
     print(f"Making {count} GET request(s)")
@@ -70,3 +73,15 @@ def probe_url(
 
     return responses
     
+@app.get("/probe/subnet",
+    summary="This checks and does a ICMP ping on all hosts in a Class C subnet.",
+    response_description="Returns all of the IPs that responded"
+)
+def probe_subnet(
+    subnet: str = Query(..., description="Subnet such as 192.168.1.0/28. Must be a Class C Subnet.")
+):
+    try: 
+        network = ipaddress.ip_network(subnet, strict=True) 
+    except ValueError: 
+        raise HTTPException(status_code=400, detail="Invalid subnet format. Use CIDR notation like 192.168.1.0/28.")
+    print(network)
