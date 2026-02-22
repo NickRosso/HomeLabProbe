@@ -56,7 +56,7 @@ The subnet validation and ping logic lives in `utils.py`.
 Docker installed... duh
 
 ## Homelab Services
-Configure what homelab services by entering in any services on your local network. I have provided some examples that I use in my homelab for probe endpoint health.
+Configure what homelab services by entering in any services on your local network to the file data\homelab_services.json. I have provided some examples that I use in my homelab for probe endpoint health.
 
 ## Env File
 Make a copy of .example_env to .env and enter any secret keys you would like to use. NOTE: Environment variables needed for authentication in the homelab_service.json need to match. If .env is VAR1, then in homelab_services.json it also needs to be VAR1 for the headers of the service. 
