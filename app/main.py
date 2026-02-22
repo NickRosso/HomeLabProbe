@@ -1,5 +1,8 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi import __version__ as fastapi_version
+from .utils import validate_and_probe_subnet
+from dotenv import load_dotenv
+import os
 import uvicorn
 import requests
 import time
@@ -7,7 +10,9 @@ import platform
 import socket
 import psutil
 import datetime
-from .utils import validate_and_probe_subnet
+import json
+
+load_dotenv() # loads those secretz
 
 app = FastAPI()
 start_time = datetime.datetime.now(datetime.UTC)
@@ -38,6 +43,22 @@ def index():
             "disk_usage": psutil.disk_usage("/")._asdict(), 
             }
         }
+
+@app.get("/probe/homelab_service_health",
+    summary="This endpoint makes requests to each of the configured defined in data/homelab_services.json.",
+    response_description="Responses from various service health endpoints."
+)
+def probe_homelab_service_health():
+    try:
+        with open(os.getenv("HOMELAB_SERVICES_DATA_PATH"), "r") as file:
+            data = json.load(file)
+            services = data["services"]
+            
+            for service in services:
+                print(service)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error loading ./data/homelab_services.json. File is missing or data is invalid JSON. Full trace: {e}")
+    return data
 
 @app.get("/probe/url",
     summary="This endpoint probes the provided web app given with GET requests.",

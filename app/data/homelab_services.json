@@ -1,0 +1,27 @@
+{ 
+    "services": [
+        { 
+            "name": "vaultwarden",
+            "URL": "https://vaultwarden.local/alive",
+            "port": 443, 
+            "TLS": false, 
+            "headers": []
+        },
+        {
+            "name": "traefik",
+            "URL": "https://traefik.local/ping", 
+            "port": 443, 
+            "TLS": false,
+            "headers": []
+        },
+        {
+            "name": "Ubiquit Dream Machine SE",
+            "URL": "https://udm_se.local/proxy/network/api/s/default/stat/health", 
+            "port": 443, 
+            "TLS": false, 
+            "headers": [
+                "X-API-KEY: UDM_SE_API_KEY",
+                "Accept: application/json"]
+        }
+    ]
+}

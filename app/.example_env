@@ -1,0 +1,2 @@
+HOMELAB_SERVICES_DATA_PATH="/code/app/data/homelab_services.json"
+UDM_SE_API_KEY="Generate API Key in UDM Unifi Console"

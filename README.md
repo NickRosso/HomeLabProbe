@@ -42,7 +42,11 @@ The subnet validation and ping logic lives in `utils.py`.
 ## Pre-reqs
 Docker installed... duh
 
+## Homelab Services
+Configure what homelab services by entering in any services on your local network. I have provided some examples that I use in my homelab for probe endpoint health.
 
+## Env File
+Make a copy of .example_env to .env and enter any secret keys you would like to use.
 ## Running Locally
 The docker compose file will run the unit tests automatically.
 

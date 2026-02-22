@@ -59,6 +59,10 @@ def test_probe_url_required_query_parameters():
     assert isinstance(data["detail"], list) # if request does not contain required parameters 
     assert len(data["detail"])== 2 #currently there are two required query parameters
 
+def test_probe_homelab_service_health():
+    response = client.get("/probe/homelab_service_health")
+    assert response.status_code == 200
+
 @patch("app.main.time.sleep")
 @patch("app.main.requests.get")
 def test_probe_url_request_count(mock_get, mock_sleep):
