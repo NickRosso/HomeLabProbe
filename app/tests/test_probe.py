@@ -1,7 +1,13 @@
 from app.main import app
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
-from app.utils import build_request_headers
+from app.utils import build_request_headers, validate_and_probe_subnet
+from dotenv import load_dotenv
+from fastapi import HTTPException
+import pytest
+import os
+
+load_dotenv() # loads those secretz
 
 client = TestClient(app)
 
@@ -130,6 +136,21 @@ def test_probe_subnet_logic(mock_subprocess):
     })
     assert response.status_code == 400
 
+def test_invalid_subnet_format():
+    with pytest.raises(HTTPException) as exc:
+        validate_and_probe_subnet("not-a-subnet")
+    assert exc.value.status_code == 400
+    assert "Invalid subnet format" in exc.value.detail
+
+
+def test_subnet_not_class_c_low():
+    with pytest.raises(HTTPException) as exc:
+        validate_and_probe_subnet("10.0.0.0/24")
+
+    assert exc.value.status_code == 400
+    assert "Class C" in exc.value.detail
+
+
 def test_build_request_headers():
     header_list = []
     headers = build_request_headers(header_list)
@@ -138,5 +159,10 @@ def test_build_request_headers():
     header_list = ["X-API-KEY: UDM_SE_API_KEY"]
     headers = build_request_headers(header_list)
     assert headers != {}
+
+    #test case for checking if env variable injection is working.
+    header_list = ["X-API-KEY: UDM_SE_API_KEY"]
+    headers = build_request_headers(header_list)
+    assert headers["X-API-KEY"] == os.getenv("UDM_SE_API_KEY")
 
     
