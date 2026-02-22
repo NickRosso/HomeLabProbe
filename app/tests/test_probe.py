@@ -1,6 +1,7 @@
 from app.main import app
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
+from app.utils import build_request_headers
 
 client = TestClient(app)
 
@@ -128,4 +129,14 @@ def test_probe_subnet_logic(mock_subprocess):
         "subnet": "192.168.1.0/50"
     })
     assert response.status_code == 400
+
+def test_build_request_headers():
+    header_list = []
+    headers = build_request_headers(header_list)
+    assert headers == {}
+
+    header_list = ["X-API-KEY: UDM_SE_API_KEY"]
+    headers = build_request_headers(header_list)
+    assert headers != {}
+
     

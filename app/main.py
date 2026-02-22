@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi import __version__ as fastapi_version
-from .utils import validate_and_probe_subnet
+from .utils import validate_and_probe_subnet, build_request_headers
 from dotenv import load_dotenv
 import os
 import uvicorn
@@ -49,16 +49,20 @@ def index():
     response_description="Responses from various service health endpoints."
 )
 def probe_homelab_service_health():
+    results = {} 
     try:
-        with open(os.getenv("HOMELAB_SERVICES_DATA_PATH"), "r") as file:
+        with open("/code/app/data/homelab_services.json", "r") as file:
             data = json.load(file)
             services = data["services"]
-            
+
             for service in services:
-                print(service)
+                headers = build_request_headers(service['headers'])
+                response = requests.get(service["URL"], verify=service["TLS"], headers=headers)
+                results[service["name"]] = response.text
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error loading ./data/homelab_services.json. File is missing or data is invalid JSON. Full trace: {e}")
-    return data
+        raise HTTPException(status_code=400, detail=f"PossibleError loading homelab_services.json. File is missing or data is invalid JSON. Full trace: {e}")
+    return results
 
 @app.get("/probe/url",
     summary="This endpoint probes the provided web app given with GET requests.",

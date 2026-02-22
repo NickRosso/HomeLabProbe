@@ -1,6 +1,10 @@
 import ipaddress
 import subprocess
 from fastapi import HTTPException
+import os
+from dotenv import load_dotenv
+
+load_dotenv() # loads those secret
 
 def validate_and_probe_subnet(subnet):
     try: 
@@ -37,3 +41,23 @@ def validate_and_probe_subnet(subnet):
         "total_hosts": len(hosts),
         "alive_hosts": alive_hosts
     }
+
+
+def build_request_headers(header_list):
+    headers = {}
+    for item in header_list:
+        if ":" not in item:
+            continue  # skip invalid entries
+
+        key, value = item.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+
+        # If the value matches an env var name, replace it
+        env_value = os.getenv(value)
+        if env_value is not None:
+            value = env_value
+
+        headers[key] = value
+
+    return headers
