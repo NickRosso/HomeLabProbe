@@ -51,6 +51,22 @@ Takes a Class C subnet (e.g., `192.168.1.0/28`) and runs an ICMP ping sweep acro
 
 The subnet validation and ping logic lives in `utils.py`.
 
+
+## Homelab Services
+Configure what homelab services by entering in any services on your local network to the file data\homelab_services.json. I have provided some examples that I use in my homelab for probe endpoint health.
+
+## Env File
+Make a copy of .example_env to .env and enter any secret keys you would like to use. NOTE: Environment variables needed for authentication in the homelab_service.json need to match. If .env is VAR1, then in homelab_services.json it also needs to be VAR1 for the headers of the service. 
+
+## Running Locally
+The docker compose file will run the unit tests automatically.
+
+
+
+```bash
+docker compose build; docker compose up
+
+
 ---
 ## Pre-reqs
 Docker installed... duh
@@ -112,19 +128,4 @@ Response:
 {
   "advice": "Based on the provided Python HTML coverage report, here are some recommendations to improve your code's test coverage:\n\n1. **Focus on `main.py`**: This is where most of your missing statements are located (43 out of 98). Here are a few ways to approach this:\n   - Break down complex functions or methods into smaller ones with clearer responsibilities, making them easier to test.\n   - Add more tests in `test_probe.py` that cover edge cases and scenarios not currently handled by your existing tests.\n   - Consider using code coverage analysis tools like `coverage.py` to pinpoint specific lines of code that are missing tests.\n\n2. **Investigate zero-coverage files**: You have two files (`__init__.py` and `test_probe.py`) with 100% coverage, but both contain very few statements (2 and 96 respectively). This might indicate that important functionality is missing from these files or that there's an error in how coverage data was collected.\n   - Review `__init__.py` to ensure it contains all the necessary initialization logic for your application.\n   - For `test_probe.py`, consider refactoring tests into smaller, more focused functions to improve maintainability and readability.\n\n3. **Review excluded statements**: Although there are no excluded statements in this report (0 out of 232), keep an eye on this metric in future reports. Excluded statements usually indicate commented-out code or statements that were intentionally ignored from coverage analysis. Regularly reviewing these can help catch any decaying tests or unnecessary code.\n\n4. **Consistent naming and formatting**: Make sure all your files, functions, and variables follow a consistent naming convention to make your codebase easier to navigate and maintain.\n   - Consider using snake_case for function and variable names, and lowercase_with_underscores for filenames as seen in the provided report.\n\n5. **Regularly update test coverage**: Make it a habit to run coverage checks frequently (e.g., after each commit or at least once a day) to track progress and catch any new uncovered lines of code early on.\n\nHere's an example of how you can improve your test coverage for `main.py` using the `coverage` command-line tool:\n\n```bash\n# Run tests and collect coverage data\npytest --cov=app\n\n# Display the coverage report for main.py\ncoverage report -m app.main\n\n# Check specific lines of code in main.py that are missing tests\ncoverage report -l app/main.py | grep '^ 0'\n```\n\nBy following these recommendations, you'll be able to improve your test coverage and maintain a high standard of quality in your Python project."
 }
-
-## Homelab Services
-Configure what homelab services by entering in any services on your local network to the file data\homelab_services.json. I have provided some examples that I use in my homelab for probe endpoint health.
-
-## Env File
-Make a copy of .example_env to .env and enter any secret keys you would like to use. NOTE: Environment variables needed for authentication in the homelab_service.json need to match. If .env is VAR1, then in homelab_services.json it also needs to be VAR1 for the headers of the service. 
-
-## Running Locally
-The docker compose file will run the unit tests automatically.
-
-
-
-```bash
-docker compose build; docker compose up
-
 
