@@ -51,29 +51,9 @@ def index():
             }
         }
 
-#Deprecated replaced with homelab_service_health remove me at some point
-# @app.get("/probe/homelab_service_health",
-#     summary="This endpoint makes requests to each of the configured defined in data/homelab_services.json.",
-#     response_description="Responses from various service health endpoints."
-# )
-# def probe_homelab_service_health():
-#     results = {} 
-#     try:
-#         with open("/code/app/data/homelab_services.json", "r") as file:
-#             data = json.load(file)
-#             services = data["services"]
 
-#             for service in services:
-#                 headers = build_request_headers(service['headers'])
-#                 response = requests.get(service["URL"], verify=service["TLS"], headers=headers)
-#                 results[service["name"]] = response.text
-
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail=f"PossibleError loading homelab_services.json. File is missing or data is invalid JSON. Full trace: {e}")
-#     return results
-
-
-@app.get("/probe/homelab_service_health")
+@app.get("/probe/homelab_service_health", summary="Retrieves the contents of the last service probe from cached file. \
+    To update which services will be tested every CHECK_INTERVAL seconds update the homelab_services.json via a post request to /probe/update_homelab_services or update the file in the codebase")
 def get_cached_health():
     if not os.path.exists(CACHE_PATH):
         raise HTTPException(status_code=404, detail="No cached health data yet.")
@@ -186,36 +166,23 @@ def probe_subnet(
     response = validate_and_probe_subnet(subnet)
     return response
 
-if os.getenv("ENVIRONMENT") == "TEST":
-    @app.get("/coverage/review")
-    def coverage_review():
-        html_path = Path("/code/htmlcov/index.html")
-        if not html_path.exists():
-            return HTTPException(status_code=400, detail="HTML coverage file doesnt exist or the path is wrong.")
-        html = html_path.read_text()
-
-        prompt = f"Review the python html coverage report and give some advice on things to fix: {html}"
-        response = requests.post("http://ollama:11434/api/generate",
-                                 json={"model": os.getenv('OLLAMA_MODEL'), "prompt": prompt, "stream": False})
-        print(response)
-        if response.status_code != 200:
-            return HTTPException(status_code=500, detail=f" LLM error: {response.text}")
-        return {"advice": response.json().get("response")}
 
 
 async def run_async_health_check():
+    #Attempt to load the json services file
     try:
         with open(os.getenv("CONFIG_PATH"), "r") as file:
             services = json.load(file)["services"]
     except Exception as e:
         print(f"Error from healthcheck {e}")
         return
-    
+    #Set up results dictionary with a timestamp
     results = { 
         "timestamp": datetime.datetime.now(datetime.UTC).isoformat(), 
         "services": {}
     }
-
+    #looping through the service to request and we create a non-block event loop to poll the services without locking up the fast api.
+    #results are saved in the corresponding service['name'] key.
     async with aiohttp.ClientSession() as session:
         for service in services:
             try:
@@ -233,10 +200,10 @@ async def run_async_health_check():
                     "error": str(e)
                 }
 
-    # saave results to cache
+    # save results to cache
     try:
         with open(CACHE_PATH, "w") as cache:
-            json.dump(results, cache, indent=4)
+            json.dump(results, cache, indent=4) # dump the results into the cache (CACHE_PATH)
     except Exception as e:
         print(f"[HealthCheck] Failed to write cache: {e}")
 
@@ -249,3 +216,21 @@ async def start_health_check_loop():
             await asyncio.sleep(CHECK_INTERVAL)
     
     asyncio.create_task(loop())
+
+
+
+if os.getenv("ENVIRONMENT") == "TEST":
+    @app.get("/coverage/review")
+    def coverage_review():
+        html_path = Path("/code/htmlcov/index.html")
+        if not html_path.exists():
+            return HTTPException(status_code=400, detail="HTML coverage file doesnt exist or the path is wrong.")
+        html = html_path.read_text()
+
+        prompt = f"Review the python html coverage report and give some advice on things to fix: {html}"
+        response = requests.post("http://ollama:11434/api/generate",
+                                 json={"model": os.getenv('OLLAMA_MODEL'), "prompt": prompt, "stream": False})
+        print(response)
+        if response.status_code != 200:
+            return HTTPException(status_code=500, detail=f" LLM error: {response.text}")
+        return {"advice": response.json().get("response")}
