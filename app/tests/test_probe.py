@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
+import json
 from app.main import app
 from app.utils import build_request_headers, validate_and_probe_subnet
 
@@ -166,4 +167,27 @@ def test_build_request_headers():
     headers = build_request_headers(header_list)
     assert headers["X-API-KEY"] == os.getenv("UDM_SE_API_KEY")
 
-    
+
+@pytest.mark.asyncio
+def test_delete_service_success(tmp_path):
+    # Create fake config file
+    config_path = tmp_path / "services.json"
+    config_path.write_text(json.dumps({
+        "services": {
+            "vaultwarden": {"status": 200},
+            "traefik": {"status": 401}
+        }
+    }))
+
+    # Patch CONFIG_PATH to point to our temp file
+    with patch("os.getenv", return_value=str(config_path)):
+        #traefik is the service name provided it will be deleted.
+        response = client.delete("/probe/services/traefik")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "deleted", "service": "traefik"}
+
+    # Verify file was updated
+    updated = json.loads(config_path.read_text())
+    assert "traefik" not in updated["services"]
+    assert "vaultwarden" in updated["services"]

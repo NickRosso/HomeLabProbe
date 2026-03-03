@@ -55,22 +55,42 @@ def index():
         }
 
 
-@app.get("/probe/homelab_service_health", summary="Retrieves the contents of the last service probe from cached file. \
+@app.get("/probe/services", summary="Retrieves the contents of the last service probe from cached file. \
     To update which services will be tested every CHECK_INTERVAL seconds update the homelab_services.json via a post request to /probe/update_homelab_services or update the file in the codebase")
-def get_cached_health():
-    if not os.path.exists(CACHE_PATH):
-        raise HTTPException(status_code=404, detail="No cached health data yet.")
+def get_services():
+    try:
+        with open(os.getenv("CACHE_PATH")) as file:
+            return json.load(file)
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Unable to load service config")
 
-    with open(CACHE_PATH, "r") as cache:
-        return json.load(cache)
+@app.delete("/probe/services/{name}", summary="This endpoint deletes the given service name from the homelab_services.json file. Wait till the next health probe before seeing the latest changes.")
+def delete_service(name: str, description="Name of the service in the homelab_services.json It must be the exact key of the service name."):
+    config_path = os.getenv("CONFIG_PATH")
+
+    try:
+        with open(config_path) as file:
+            data = json.load(file)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="unable to load service config path")
+    
+    result = data["services"].pop(name, None)
+    
+    if result == None:
+        raise HTTPException(status_code=404, detail="Service was not found in dictionary.")
+    with open(config_path, "w") as file:
+        json.dump(data, file, indent = 4)
+
+    return {"status": "deleted", "service": f"{name}"}
 
 
 
-@app.post("/probe/update_homelab_services",
-    summary="This enpdoint accepts properly formatted JSON files to overwrite the homelab_services.json file.",
+@app.post("/probe/update_services",
+    summary="This endpoint accepts properly formatted JSON files to overwrite the homelab_services.json file.",
     response_description="Status of the uploaded .json file."
 )
-async def update_homelab_services_file(file: UploadFile):
+async def update_services(file: UploadFile):
     contents = await file.read()
 
     if not contents:
@@ -220,20 +240,3 @@ async def start_health_check_loop():
     
     asyncio.create_task(loop())
 
-
-
-if os.getenv("ENVIRONMENT") == "TEST":
-    @app.get("/coverage/review")
-    def coverage_review():
-        html_path = Path("/code/htmlcov/index.html")
-        if not html_path.exists():
-            return HTTPException(status_code=400, detail="HTML coverage file doesnt exist or the path is wrong.")
-        html = html_path.read_text()
-
-        prompt = f"Review the python html coverage report and give some advice on things to fix: {html}"
-        response = requests.post("http://ollama:11434/api/generate",
-                                 json={"model": os.getenv('OLLAMA_MODEL'), "prompt": prompt, "stream": False})
-        print(response)
-        if response.status_code != 200:
-            return HTTPException(status_code=500, detail=f" LLM error: {response.text}")
-        return {"advice": response.json().get("response")}
