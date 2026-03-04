@@ -131,6 +131,7 @@ def index():
         }
 
 
+
 @app.get("/probe/services", summary="Retrieves the contents of the last service probe from cached file. \
     To update which services will be tested every CHECK_INTERVAL seconds update the homelab_services.json via a post request to /probe/update_homelab_services or update the file in the codebase")
 def get_services():
@@ -265,5 +266,14 @@ def probe_subnet(
     response = validate_and_probe_subnet(subnet)
     return response
 
-
+@app.get("/service_logs", summary="Retrieves the logs of past health checks done on the services in CSV format. \
+    ")
+def get_logs():
+    try:
+        with open(os.getenv("LOG_PATH")) as file:
+            reader = csv.DictReader(file)
+            return list(reader)
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Unable to load csv log file.")
 

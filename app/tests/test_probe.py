@@ -3,6 +3,8 @@ import pytest
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+import tempfile
+import csv
 from unittest.mock import MagicMock, patch
 import json
 from app.main import app
@@ -167,7 +169,6 @@ def test_build_request_headers():
     headers = build_request_headers(header_list)
     assert headers["X-API-KEY"] == os.getenv("UDM_SE_API_KEY")
 
-
 def test_delete_service_success(tmp_path):
     # Create fake config file
     config_path = tmp_path / "services.json"
@@ -190,3 +191,36 @@ def test_delete_service_success(tmp_path):
     updated = json.loads(config_path.read_text())
     assert "traefik" not in updated["services"]
     assert "vaultwarden" in updated["services"]
+
+def test_get_logs_returns_parsed_csv():
+    # Create a temporary CSV file
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as tmp:
+        writer = csv.writer(tmp)
+        writer.writerow(["timestamp", "service", "status", "content_length"])
+        writer.writerow(["2024-01-01T00:00:00Z", "auth", "200", "123"])
+        writer.writerow(["2024-01-01T00:00:00Z", "db", "500", "0"])
+        tmp_path = tmp.name
+
+    # Patch LOG_PATH to point to our temp file
+    with patch.dict(os.environ, {"LOG_PATH": tmp_path}):
+        client = TestClient(app)
+        response = client.get("/service_logs")
+
+    # Cleanup temp file
+    os.remove(tmp_path)
+
+    # Assertions
+    assert response.status_code == 200
+    data = response.json()
+
+    assert isinstance(data, list)
+    assert len(data) == 2
+
+    assert data[0]["service"] == "auth"
+    assert data[0]["status"] == "200"
+    assert data[0]["content_length"] == "123"
+
+    assert data[1]["service"] == "db"
+    assert data[1]["status"] == "500"
+    assert data[1]["content_length"] == "0"
+
