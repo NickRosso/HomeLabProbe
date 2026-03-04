@@ -11,9 +11,11 @@ import aiohttp
 import psutil
 import requests
 import uvicorn
+import csv
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, UploadFile
 from fastapi import __version__ as fastapi_version
+from contextlib import asynccontextmanager
 
 # Local application imports
 from .utils import build_request_headers, validate_and_probe_subnet
@@ -24,11 +26,85 @@ load_dotenv() # loads those secretz
 CACHE_PATH = os.getenv("CACHE_PATH")
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL")) #every 5 min poll services.
 
-app = FastAPI()
+async def run_async_health_check():
+    #Attempt to load the json services file
+    try:
+        with open(os.getenv("CONFIG_PATH"), "r") as file:
+            services = json.load(file)["services"]
+    except Exception as e:
+        print(f"Error from healthcheck {e}")
+        return
+    #Set up results dictionary with a timestamp
+    results = { 
+        "timestamp": datetime.datetime.now(datetime.UTC).isoformat(), 
+        "services": {}
+    }
+    #looping through the service to make a request and we create a non-block event loop to poll the services without locking up the fast api.
+    #results are saved in the corresponding service['name'] key.
+    async with aiohttp.ClientSession() as session:
+        for service in services:
+            try:
+                async with session.get(
+                    service["URL"],
+                    ssl=service["TLS"],
+                    headers=build_request_headers(service["headers"])
+                ) as resp:
+                    results["services"][service["name"]] = {
+                        "status": resp.status,
+                        "content_length": resp.content_length,
+                    }
+            except Exception as e:
+                results["services"][service["name"]] = {
+                    "error": str(e)
+                }
+
+    # save results to cache
+    try:
+        with open(CACHE_PATH, "w") as cache:
+            json.dump(results, cache, indent=4) # dump the results into the cache (CACHE_PATH)
+    except Exception as e:
+        print(f"[HealthCheck] Failed to write cache: {e}")
+
+    #save results to log file in CSV format.
+    try:
+        with open(os.getenv("LOG_PATH"), "a", newline='') as csv_file:
+            fieldnames = ["timestamp", "service", "status", "content_length"]
+            log_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            for name, data in results["services"].items():
+                log_writer.writerow({'timestamp': results["timestamp"],
+                                    'service': name,
+                                    'status': data.get('status'),
+                                    'content_length': data.get('content_length')})
+    except Exception as e:
+        print(f"Error: {e}")
+
+async def health_check_loop():
+    while True:
+        print("Triggering Health Check")
+        await run_async_health_check()
+        print(f"Sleeping for {CHECK_INTERVAL} seconds")
+        await asyncio.sleep(CHECK_INTERVAL)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting Lifespan create task")
+    task = asyncio.create_task(health_check_loop())
+
+    yield
+    task.cancel()
+
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+
+app = FastAPI(lifespan=lifespan)
 start_time = datetime.datetime.now(datetime.UTC)
 
 @app.get("/",
-    summary="Welcome to the Homelab Probe API. This is a playground for messing with Fast API"
+    summary="Welcome to the Probapi (Probe API). This is a playground for messing with Fast API"
     " and trying different methodologies. This endpoint provides interesting system and server information."
 )
 def index():
@@ -190,53 +266,4 @@ def probe_subnet(
     return response
 
 
-
-async def run_async_health_check():
-    #Attempt to load the json services file
-    try:
-        with open(os.getenv("CONFIG_PATH"), "r") as file:
-            services = json.load(file)["services"]
-    except Exception as e:
-        print(f"Error from healthcheck {e}")
-        return
-    #Set up results dictionary with a timestamp
-    results = { 
-        "timestamp": datetime.datetime.now(datetime.UTC).isoformat(), 
-        "services": {}
-    }
-    #looping through the service to request and we create a non-block event loop to poll the services without locking up the fast api.
-    #results are saved in the corresponding service['name'] key.
-    async with aiohttp.ClientSession() as session:
-        for service in services:
-            try:
-                async with session.get(
-                    service["URL"],
-                    ssl=service["TLS"],
-                    headers=build_request_headers(service["headers"])
-                ) as resp:
-                    results["services"][service["name"]] = {
-                        "status": resp.status,
-                        "content_length": resp.content_length,
-                    }
-            except Exception as e:
-                results["services"][service["name"]] = {
-                    "error": str(e)
-                }
-
-    # save results to cache
-    try:
-        with open(CACHE_PATH, "w") as cache:
-            json.dump(results, cache, indent=4) # dump the results into the cache (CACHE_PATH)
-    except Exception as e:
-        print(f"[HealthCheck] Failed to write cache: {e}")
-
-
-@app.on_event("startup")
-async def start_health_check_loop():
-    async def loop():
-        while True:
-            await run_async_health_check()
-            await asyncio.sleep(CHECK_INTERVAL)
-    
-    asyncio.create_task(loop())
 

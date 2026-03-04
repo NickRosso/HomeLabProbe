@@ -61,7 +61,7 @@ Takes a Class C subnet (e.g., `192.168.1.0/28`) and runs an ICMP ping sweep acro
 The subnet validation and ping logic lives in `utils.py`.
 
 
-## Homelab Services
+## Probapi Services
 Configure what homelab services by entering in any services on your local network to the file data\homelab_services.json. I have provided some examples that I use in my homelab for probe endpoint health.
 
 ## Env File

@@ -168,7 +168,6 @@ def test_build_request_headers():
     assert headers["X-API-KEY"] == os.getenv("UDM_SE_API_KEY")
 
 
-@pytest.mark.asyncio
 def test_delete_service_success(tmp_path):
     # Create fake config file
     config_path = tmp_path / "services.json"

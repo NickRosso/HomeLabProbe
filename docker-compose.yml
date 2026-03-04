@@ -1,7 +1,7 @@
 services:
-  homelab-api:
+  probapi:
     build: .
-    container_name: homelab-api
+    container_name: probapi
     command: >
       uvicorn app.main:app
       --host 0.0.0.0

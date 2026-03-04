@@ -3,6 +3,7 @@ PORT="8000"
 UDM_SE_API_KEY="Generate API Key in UDM Unifi Console"
 CONFIG_PATH = "/code/app/data/homelab_services.json"
 CACHE_PATH="/code/app/data/health_cache.json"
+LOG_PATH="/code/app/data/service_logs.csv"
 CHECK_INTERVAL=300
 UPLOAD_DIR = "/code/app/data"
 ENVIRONMENT="TEST"
