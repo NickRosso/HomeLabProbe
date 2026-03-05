@@ -147,12 +147,26 @@ def test_invalid_subnet_format():
     assert "Invalid subnet format" in exc.value.detail
 
 
-def test_subnet_not_class_c_low():
+
+invalid_cases = [
+    {"subnet": "10.0.0.0/24", "msg": "Class C range"},
+    {"subnet": "172.16.0.0/24", "msg": "Class C range"},
+    {"subnet": "192.168.1.0", "msg": "Invalid subnet format"},
+    {"subnet": "192.168.0.0/16", "msg": "Subnet must be /24 or smaller"},
+    {"subnet": "300.300.300.0/24", "msg": "Invalid subnet format"},
+]
+
+
+@pytest.mark.parametrize(
+    "subnet,expected_msg",
+    [(case["subnet"], case["msg"]) for case in invalid_cases]
+)
+def test_subnet_errors(subnet, expected_msg):
     with pytest.raises(HTTPException) as exc:
-        validate_and_probe_subnet("10.0.0.0/24")
+        validate_and_probe_subnet(subnet)
 
     assert exc.value.status_code == 400
-    assert "Class C" in exc.value.detail
+    assert expected_msg in exc.value.detail
 
 
 def test_build_request_headers():

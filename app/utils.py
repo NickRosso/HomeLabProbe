@@ -8,17 +8,19 @@ from fastapi import HTTPException
 load_dotenv() # loads those secret
 
 def validate_and_probe_subnet(subnet):
+
+    if "/" not in subnet:
+        raise HTTPException(status_code=400, detail="Invalid subnet format")
+    
     try: 
         network = ipaddress.ip_network(subnet, strict=True) 
-    except ValueError: 
+    except Exception as e: 
         raise HTTPException(status_code=400, detail="Invalid subnet format. Use CIDR notation like 192.168.1.0/28.")
-    #TODO: this first octet check does not appear to be working based on unit test coverage
     first_octet = int(str(network.network_address).split(".")[0])
     if not (192 <= first_octet <= 223):
         raise HTTPException(status_code=400, detail="Subnet must be in the Class C range (192.0.0.0 – 223.255.255.255).")
 
     # Validate prefix length (must be /24 or smaller)
-    #TODO: this first prefix check does not appear to be working based on unit test coverage
     if network.prefixlen < 24:
         raise HTTPException(status_code=400, detail="Subnet must be /24 or smaller (e.g., /24, /25, /26, /27, /28).")
     
