@@ -2,9 +2,27 @@
 
 This is a small FastAPI project I built for experimenting with network probing inside my homelab. It started as a way to play with FastAPI, but it turned into a handy little tool for checking HTTP endpoints, scanning subnets, and more to come.
 
-It’s lightweight, easy to run in Docker, and simple to extend.
+It’s useful when you don’t need Prometheus‑level complexity but still want something that can ping your stuff, log failures, and generally let you know when things go sideways.
+---
+
+
+## Env File
+Copy .example_env to .env and fill in your values.
+Environment variables referenced in homelab_services.json must match the names in key in the .env. If they don’t, any authentication bearer tokens etc wont work and you’ll spend 20 minutes debugging something that was spelled wrong.
+
+## Running Locally
+The docker compose file will run the unit tests automatically.
+
+
+
+```bash
+docker compose build
+docker compose up
+```
 
 ---
+## Pre-reqs
+Docker installed... duh
 
 ## Features
 
@@ -55,6 +73,19 @@ Example response:
 }
 ```
 
+## Probapi Services (POST /probe/update_services)
+Uploads a new homelab_services.json file. The endpoint:
+
+  - Validates the JSON
+  - Ensures required keys exist
+  - Creates a timestamped backup
+  - Replaces the existing config
+
+If you upload garbage, it will tell you. If you upload valid JSON, it will happily overwrite your config, so double-check before you hit send.
+
+Delete a Service (DELETE /probe/services/{name})
+Deletes a service from the config file.
+Changes show up on the next background health-check cycle.
 
 ---
 
@@ -77,23 +108,6 @@ The subnet validation and ping logic live in utils.py, which is where all the fu
 The subnet validation and ping logic lives in `utils.py`.
 
 
-## Probapi Services (POST /probe/update_services)
-Uploads a new homelab_services.json file. The endpoint:
-
-  - Validates the JSON
-
-  - Ensures required keys exist
-
-  - Creates a timestamped backup
-
-  - Replaces the existing config
-
-If you upload garbage, it will tell you. If you upload valid JSON, it will happily overwrite your config, so double-check before you hit send.
-
-Delete a Service (DELETE /probe/services/{name})
-Deletes a service from the config file.
-Changes show up on the next background health-check cycle.
-
 
 ### Service Logs (GET /service_logs)
 Returns the CSV log file as a list of JSON objects.
@@ -103,21 +117,3 @@ Each row includes:
   - status
   - content_length
 
-
-## Env File
-Copy .example_env to .env and fill in your values.
-Environment variables referenced in homelab_services.json must match the names in key in the .env. If they don’t, any authentication bearer tokens etc wont work and you’ll spend 20 minutes debugging something that was spelled wrong.
-
-## Running Locally
-The docker compose file will run the unit tests automatically.
-
-
-
-```bash
-docker compose build
-docker compose up
-```
-
----
-## Pre-reqs
-Docker installed... duh
